@@ -1,0 +1,536 @@
+===== APP JSX =====
+import { useState } from 'react';
+import { sendToAI } from './services/ai';
+import {
+  Menu, Plus, Search, MessageSquare, Settings,
+  GraduationCap, FilePlus, Code, Globe, Send,
+  Paperclip, Sparkles, Bot, User, Copy,
+  PanelLeftClose, X, Languages
+} from 'lucide-react';
+import './App.css';
+
+const initialChats = [];
+
+const suggestions = [
+  { icon: GraduationCap, title: 'المساعد الجامعي', desc: 'اشرح لي محاضرة أو حل مسألة' },
+  { icon: Search, title: 'البحث الذكي', desc: 'ابحث عن موضوع واجمع مصادره' },
+  { icon: FilePlus, title: 'إنشاء الملفات', desc: 'جهز تقريراً أو مستنداً' },
+  { icon: Code, title: 'مساعد البرمجة', desc: 'اكتب أو صحح الأكواد' }
+];
+
+function App() {
+  const [messages, setMessages] = useState([]);
+  const [chats, setChats] = useState(initialChats);
+  const [input, setInput] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [sidebar, setSidebar] = useState(false);
+  const [language, setLanguage] = useState('ar');
+
+  const isArabic = language === 'ar';
+
+  function newChat() {
+    setMessages([]);
+    setSidebar(false);
+  }
+
+  async function sendMessage(value = input) {
+    const question = value.trim();
+    if (!question || loading) return;
+
+    const history = [
+      ...messages,
+      { role: 'user', content: question }
+    ];
+
+    setInput('');
+    setMessages(history);
+    setChats(prev => [
+      { title: question.slice(0, 35), id: Date.now() },
+      ...prev
+    ]);
+    setLoading(true);
+
+    try {
+      const answer = await sendToAI(history);
+      setMessages(prev => [
+        ...prev,
+        { role: 'assistant', content: answer }
+      ]);
+    } catch (error) {
+      setMessages(prev => [
+        ...prev,
+        {
+          role: 'assistant',
+          content: isArabic
+            ? `تعذر الاتصال بالذكاء الاصطناعي المحلي: ${error.message}
+تأكد من تشغيل خادم Qwen في Termux.`
+            : `Could not connect to the local AI: ${error.message}
+Make sure the Qwen server is running in Termux.`
+        }
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function copyText(text) {
+    if (navigator.clipboard) navigator.clipboard.writeText(text);
+  }
+
+  return (
+    <div className="app" dir={isArabic ? 'rtl' : 'ltr'}>
+      {sidebar && <div className="overlay" onClick={() => setSidebar(false)} />}
+
+      <aside className={`sidebar ${sidebar ? 'show' : ''}`}>
+        <div className="brand">
+          <div className="brand-icon"><Sparkles size={23}/></div>
+          <div>
+            <strong>Nexa AI</strong>
+            <span>INTELLIGENCE STUDIO</span>
+          </div>
+          <button className="icon-btn close-sidebar" onClick={() => setSidebar(false)}>
+            <X size={19}/>
+          </button>
+        </div>
+
+        <button className="new-chat" onClick={newChat}>
+          <Plus size={19}/> {isArabic ? 'محادثة جديدة' : 'New chat'}
+        </button>
+
+        <div className="side-label">{isArabic ? 'مساحة العمل' : 'WORKSPACE'}</div>
+
+        <button className="nav-item active" onClick={newChat}>
+          <MessageSquare size={18}/> {isArabic ? 'المحادثة الذكية' : 'AI Chat'}
+        </button>
+        <button className="nav-item">
+          <Search size={18}/> {isArabic ? 'البحث الذكي' : 'Research'}
+          <span className="soon">SOON</span>
+        </button>
+        <button className="nav-item">
+          <FilePlus size={18}/> {isArabic ? 'صناعة الملفات' : 'File Creator'}
+          <span className="soon">SOON</span>
+        </button>
+        <button className="nav-item">
+          <GraduationCap size={18}/> {isArabic ? 'المساعد الجامعي' : 'Study Assistant'}
+        </button>
+        <button className="nav-item">
+          <Code size={18}/> {isArabic ? 'البرمجة' : 'Coding'}
+        </button>
+
+        <div className="side-label history-label">
+          {isArabic ? 'المحادثات الأخيرة' : 'RECENT CHATS'}
+        </div>
+        <div className="history">
+          {chats.map(chat => (
+            <button className="history-item" key={chat.id} onClick={newChat}>
+              <MessageSquare size={15}/>
+              <span>{chat.title}</span>
+            </button>
+          ))}
+          {chats.length === 0 && (
+            <p className="empty-history">
+              {isArabic ? 'ستظهر محادثاتك هنا' : 'Your chats will appear here'}
+            </p>
+          )}
+        </div>
+
+        <div className="sidebar-bottom">
+          <button className="nav-item" onClick={() => setLanguage(isArabic ? 'en' : 'ar')}>
+            <Languages size={18}/>
+            {isArabic ? 'English' : 'العربية'}
+          </button>
+          <button className="nav-item">
+            <Settings size={18}/> {isArabic ? 'الإعدادات' : 'Settings'}
+          </button>
+          <div className="profile">
+            <div className="avatar">N</div>
+            <div><strong>Nexa AI</strong><span>Personal workspace</span></div>
+            <Sparkles size={17} className="profile-spark"/>
+          </div>
+        </div>
+      </aside>
+
+      <main className="main">
+        <header className="topbar">
+          <div className="top-left">
+            <button className="icon-btn menu-btn" onClick={() => setSidebar(true)}>
+              <Menu size={21}/>
+            </button>
+            <div className="mobile-brand">
+              <Sparkles size={18}/> Nexa AI
+            </div>
+            <span className="model-label">
+              <span className="online-dot"/> AI Workspace
+            </span>
+          </div>
+          <button className="icon-btn" onClick={newChat} title="New chat">
+            <Plus size={20}/>
+          </button>
+        </header>
+
+        <section className="content">
+          {messages.length === 0 ? (
+            <div className="welcome">
+              <div className="welcome-icon">
+                <Sparkles size={32}/>
+              </div>
+              <div className="welcome-tag">
+                <span className="online-dot"/> YOUR AI WORKSPACE
+              </div>
+              <h1>
+                {isArabic ? <>مرحباً بك في <span>Nexa AI</span></> :
+                  <>Welcome to <span>Nexa AI</span></>}
+              </h1>
+              <p>
+                {isArabic
+                  ? 'مساحتك الذكية للتعلم والبحث والإبداع وإنجاز المهام.'
+                  : 'Your intelligent space for learning, research, creativity and productivity.'}
+              </p>
+
+              <div className="suggestions">
+                {suggestions.map(({icon: Icon, title, desc}) => (
+                  <button className="suggestion" key={title}
+                    onClick={() => sendMessage(isArabic ? title : desc)}>
+                    <div className="suggestion-icon"><Icon size={21}/></div>
+                    <div><strong>{isArabic ? title : desc}</strong>
+                      <span>{isArabic ? desc : title}</span></div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="messages">
+              {messages.map((msg, i) => (
+                <div className={`message ${msg.role}`} key={i}>
+                  <div className="message-avatar">
+                    {msg.role === 'assistant' ? <Sparkles size={18}/> : <User size={18}/>}
+                  </div>
+                  <div className="message-body">
+                    <strong>{msg.role === 'assistant' ? 'Nexa AI' : (isArabic ? 'أنت' : 'You')}</strong>
+                    <p>{msg.content}</p>
+                    {msg.role === 'assistant' && (
+                      <button className="copy-btn" onClick={() => copyText(msg.content)}>
+                        <Copy size={14}/> {isArabic ? 'نسخ' : 'Copy'}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+              {loading && <div className="typing"><span/><span/><span/></div>}
+            </div>
+          )}
+        </section>
+
+        <footer className="composer-area">
+          <div className="composer">
+            <button className="attach-btn" title="Attach file">
+              <Paperclip size={19}/>
+            </button>
+            <textarea
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  sendMessage();
+                }
+              }}
+              placeholder={isArabic ? 'اسأل Nexa AI عن أي شيء...' : 'Ask Nexa AI anything...'}
+              rows={1}
+            />
+            <button className="send-btn" onClick={() => sendMessage()} disabled={!input.trim() || loading}>
+              <Send size={19}/>
+            </button>
+          </div>
+          <p className="disclaimer">
+            {isArabic
+              ? 'قد يخطئ الذكاء الاصطناعي. تحقق من المعلومات المهمة.'
+              : 'AI can make mistakes. Verify important information.'}
+          </p>
+        </footer>
+      </main>
+    </div>
+  );
+}
+
+export default App;
+
+===== APP CSS =====
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap');
+
+:root {
+  font-family: 'Inter','IBM Plex Sans Arabic',sans-serif;
+  color: #f1f0f8;
+  background: #090a11;
+  font-synthesis: none;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background: #090a11;
+}
+
+button, textarea { font: inherit; }
+button { cursor: pointer; }
+
+.app {
+  display: flex;
+  height: 100dvh;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at 65% 0%, #211638 0%, transparent 45%),
+    #090a11;
+}
+
+.sidebar {
+  width: 265px;
+  min-width: 265px;
+  height: 100%;
+  padding: 23px 16px 14px;
+  background: rgba(13,14,23,.96);
+  border-inline-end: 1px solid #242333;
+  display: flex;
+  flex-direction: column;
+  z-index: 5;
+}
+
+.brand { display:flex; align-items:center; gap:11px; padding:3px 5px 27px; }
+.brand-icon,.welcome-icon {
+  display:grid; place-items:center;
+  background:linear-gradient(140deg,#8d5cf6,#4935bd);
+  color:white; border-radius:13px;
+  box-shadow:0 5px 25px #7954e744;
+}
+.brand-icon { width:43px;height:43px; }
+.brand strong { display:block;font-size:18px;letter-spacing:-.5px; }
+.brand span { display:block;font-size:9px;color:#85839c;letter-spacing:1.2px;margin-top:3px; }
+.icon-btn { border:0;background:transparent;color:#aaa8bb;padding:9px;border-radius:10px;display:grid;place-items:center; }
+.icon-btn:hover,.nav-item:hover { background:#222132;color:white; }
+.close-sidebar { display:none;margin-inline-start:auto; }
+
+.new-chat {
+  display:flex;align-items:center;justify-content:center;gap:9px;
+  background:linear-gradient(110deg,#704ce0,#5940b9);
+  color:white;border:0;border-radius:11px;padding:13px;
+  font-weight:600;margin-bottom:30px;
+  box-shadow:0 5px 20px #6849cf30;
+}
+.side-label { color:#77758c;font-size:10px;font-weight:700;letter-spacing:1.3px;padding:0 10px 12px; }
+.nav-item {
+  display:flex;align-items:center;gap:12px;
+  border:0;background:transparent;color:#aaa8bb;
+  padding:12px 11px;border-radius:9px;text-align:start;
+  width:100%;font-size:13px;margin-bottom:3px;
+}
+.nav-item.active { background:#242037;color:#c7b4ff; }
+.soon { margin-inline-start:auto;font-size:8px;color:#a38bff;letter-spacing:.6px; }
+.history-label { margin-top:29px; }
+.history { overflow:auto; }
+.history-item { display:flex;gap:9px;align-items:center;width:100%;border:0;background:none;color:#aaa8bb;padding:11px;border-radius:8px;text-align:start;font-size:12px; }
+.history-item span { overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+.empty-history { color:#6d6b7e;font-size:11px;padding:0 10px; }
+.sidebar-bottom { margin-top:auto; }
+.profile { display:flex;align-items:center;gap:10px;border-top:1px solid #272536;padding:17px 5px 4px;margin-top:13px; }
+.avatar { display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:#393052;color:#d8c9ff;font-weight:700; }
+.profile strong,.profile span { display:block;font-size:11px; }
+.profile span { color:#77758c;font-size:9px;margin-top:3px; }
+.profile-spark { margin-inline-start:auto;color:#a58bff; }
+
+.main { flex:1;min-width:0;display:flex;flex-direction:column; }
+.topbar { height:67px;display:flex;align-items:center;justify-content:space-between;padding:0 27px;border-bottom:1px solid #242333; }
+.top-left { display:flex;align-items:center;gap:15px; }
+.model-label { display:flex;align-items:center;gap:8px;color:#b2afc4;font-size:11px;background:#191824;border:1px solid #2d293b;border-radius:30px;padding:8px 12px; }
+.online-dot { width:7px;height:7px;border-radius:50%;background:#60d6a0;box-shadow:0 0 9px #60d6a080; }
+.menu-btn,.mobile-brand { display:none; }
+
+.content { flex:1;overflow:auto;display:flex;justify-content:center; }
+.welcome { width:min(650px,100%);padding:65px 23px 35px;text-align:center;margin:auto 0; }
+.welcome-icon { width:68px;height:68px;border-radius:22px;margin:0 auto 22px; }
+.welcome-tag { color:#a995e8;font-size:9px;font-weight:700;letter-spacing:2px;display:flex;align-items:center;justify-content:center;gap:9px; }
+.welcome h1 { font-size:clamp(27px,5vw,39px);letter-spacing:-1.5px;margin:17px 0 10px;font-weight:700; }
+.welcome h1 span { background:linear-gradient(100deg,#c7a7ff,#8170f6);background-clip:text;color:transparent; }
+.welcome>p { color:#9996aa;font-size:13px;line-height:1.9;margin:0 auto;max-width:430px; }
+.suggestions { display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-top:39px;text-align:start; }
+.suggestion { display:flex;align-items:center;gap:13px;padding:16px 13px;border:1px solid #29263a;background:#14131e;border-radius:13px;color:#eeeaf8;text-align:start;transition:.2s; }
+.suggestion:hover { border-color:#7656d7;background:#201a31;transform:translateY(-2px); }
+.suggestion-icon { width:39px;height:39px;flex-shrink:0;display:grid;place-items:center;border-radius:11px;background:#29213d;color:#b79aff; }
+.suggestion strong,.suggestion span { display:block;font-size:11px;line-height:1.7; }
+.suggestion span { color:#858196;font-size:10px;margin-top:2px; }
+
+.messages { width:min(760px,100%);padding:35px 22px; }
+.message { display:flex;gap:13px;margin-bottom:28px; }
+.message-avatar { width:34px;height:34px;flex-shrink:0;border-radius:11px;background:#29213d;color:#c6aaff;display:grid;place-items:center; }
+.message.user .message-avatar { background:#222638;color:#b8c5ff; }
+.message-body { flex:1;min-width:0; }
+.message-body strong { font-size:12px; }
+.message-body p { font-size:13px;line-height:1.9;color:#cfccda;white-space:pre-wrap;overflow-wrap:anywhere; }
+.copy-btn { display:flex;gap:6px;align-items:center;border:0;background:none;color:#89869d;font-size:10px;padding:5px; }
+.typing { display:flex;gap:5px;padding:10px 50px; }
+.typing span { width:7px;height:7px;border-radius:50%;background:#a98af8;animation:pulse 1s infinite alternate; }
+.typing span:nth-child(2){animation-delay:.2s}.typing span:nth-child(3){animation-delay:.4s}
+@keyframes pulse { to { opacity:.25;transform:translateY(-4px); } }
+
+.composer-area { width:min(760px,100%);margin:0 auto;padding:12px 20px 17px; }
+.composer { display:flex;align-items:center;gap:10px;background:#171620;border:1px solid #373247;border-radius:17px;padding:9px 11px;box-shadow:0 10px 40px #0003; }
+.composer:focus-within { border-color:#8663e5; }
+.composer textarea { flex:1;min-width:0;resize:none;max-height:120px;background:none;border:0;outline:0;color:#f2effb;font-size:13px;padding:10px 0;line-height:1.6; }
+.composer textarea::placeholder { color:#777487; }
+.attach-btn { border:0;background:none;color:#8d899f;padding:7px; }
+.send-btn { border:0;border-radius:11px;width:39px;height:39px;display:grid;place-items:center;background:linear-gradient(140deg,#895de9,#5b42c0);color:white; }
+.send-btn:disabled { opacity:.35;cursor:not-allowed; }
+.disclaimer { text-align:center;color:#666477;font-size:9px;margin:11px 0 0; }
+
+.overlay { display:none; }
+
+@media(max-width:700px) {
+  .sidebar { position:fixed;inset-block:0;inset-inline-start:0;transform:translateX(110%);transition:.25s;width:280px; }
+  [dir="ltr"] .sidebar { transform:translateX(-110%); }
+  .sidebar.show { transform:translateX(0)!important; }
+  .overlay { display:block;position:fixed;inset:0;background:#0009;z-index:4; }
+  .close-sidebar,.menu-btn { display:grid; }
+  .mobile-brand { display:flex;align-items:center;gap:7px;font-weight:700;font-size:15px;color:#d9c8ff; }
+  .model-label { font-size:9px;padding:7px 9px; }
+  .topbar { padding:0 13px;height:59px; }
+  .welcome { padding:35px 17px; }
+  .welcome h1 { letter-spacing:-1px; }
+  .suggestions { gap:9px;margin-top:27px; }
+  .suggestion { padding:12px 9px;gap:9px; }
+  .suggestion-icon { width:33px;height:33px; }
+  .suggestion strong { font-size:10px; }
+  .suggestion span { font-size:9px; }
+  .composer-area { padding:10px 12px 14px; }
+  .messages { padding:25px 14px; }
+}
+
+@media(max-width:370px) {
+  .suggestions { grid-template-columns:1fr; }
+}
+
+===== GLOBAL CSS =====
+:root {
+  --text: #6b6375;
+  --text-h: #08060d;
+  --bg: #fff;
+  --border: #e5e4e7;
+  --code-bg: #f4f3ec;
+  --accent: #aa3bff;
+  --accent-bg: rgba(170, 59, 255, 0.1);
+  --accent-border: rgba(170, 59, 255, 0.5);
+  --social-bg: rgba(244, 243, 236, 0.5);
+  --shadow:
+    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+
+  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --mono: ui-monospace, Consolas, monospace;
+
+  font: 18px/145% var(--sans);
+  letter-spacing: 0.18px;
+  color-scheme: light dark;
+  color: var(--text);
+  background: var(--bg);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  @media (max-width: 1024px) {
+    font-size: 16px;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --text: #9ca3af;
+    --text-h: #f3f4f6;
+    --bg: #16171d;
+    --border: #2e303a;
+    --code-bg: #1f2028;
+    --accent: #c084fc;
+    --accent-bg: rgba(192, 132, 252, 0.15);
+    --accent-border: rgba(192, 132, 252, 0.5);
+    --social-bg: rgba(47, 48, 58, 0.5);
+    --shadow:
+      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
+  }
+
+  #social .button-icon {
+    filter: invert(1) brightness(2);
+  }
+}
+
+body {
+  margin: 0;
+}
+
+#root {
+  width: 1126px;
+  max-width: 100%;
+  margin: 0 auto;
+  text-align: center;
+  border-inline: 1px solid var(--border);
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+h1,
+h2 {
+  font-family: var(--heading);
+  font-weight: 500;
+  color: var(--text-h);
+}
+
+h1 {
+  font-size: 56px;
+  letter-spacing: -1.68px;
+  margin: 32px 0;
+  @media (max-width: 1024px) {
+    font-size: 36px;
+    margin: 20px 0;
+  }
+}
+h2 {
+  font-size: 24px;
+  line-height: 118%;
+  letter-spacing: -0.24px;
+  margin: 0 0 8px;
+  @media (max-width: 1024px) {
+    font-size: 20px;
+  }
+}
+p {
+  margin: 0;
+}
+
+code,
+.counter {
+  font-family: var(--mono);
+  display: inline-flex;
+  border-radius: 4px;
+  color: var(--text-h);
+}
+
+code {
+  font-size: 15px;
+  line-height: 135%;
+  padding: 4px 8px;
+  background: var(--code-bg);
+}
+
+===== MAIN ENTRY =====
+import { StrictMode } from 'react'
+import { createRoot } from 'react-dom/client'
+import './index.css'
+import App from './App.jsx'
+
+createRoot(document.getElementById('root')).render(
+  <StrictMode>
+    <App />
+  </StrictMode>,
+)
