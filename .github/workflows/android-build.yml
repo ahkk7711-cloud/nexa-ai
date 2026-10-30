@@ -28,7 +28,7 @@ jobs:
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
-          with:
+        with:
             cmdline-tools-version: 12266719
 
       - name: Install dependencies

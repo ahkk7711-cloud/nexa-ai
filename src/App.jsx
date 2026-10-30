@@ -23,6 +23,7 @@ function App() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [sidebar, setSidebar] = useState(false);
+  const [activeSection, setActiveSection] = useState('chat');
   const [language, setLanguage] = useState('ar');
   const [selectedModel, setSelectedModel] = useState('auto');
   const [models, setModels] = useState([]);
@@ -55,8 +56,14 @@ function App() {
         ? (isArabic ? 'النماذج غير متصلة' : 'Models offline')
         : (isArabic ? 'جارٍ التحقق...' : 'Checking models...'));
 
+  function openSection(section) {
+    setActiveSection(section);
+    setSidebar(false);
+  }
+
   function newChat() {
     setMessages([]);
+    setActiveSection('chat');
     setSidebar(false);
   }
 
@@ -126,21 +133,19 @@ Make sure the local AI server is running.`
 
         <div className="side-label">{isArabic ? 'مساحة العمل' : 'WORKSPACE'}</div>
 
-        <button className="nav-item active" onClick={newChat}>
+        <button className={`nav-item ${activeSection === 'chat' ? 'active' : ''}`} onClick={newChat}>
           <MessageSquare size={18}/> {isArabic ? 'المحادثة الذكية' : 'AI Chat'}
         </button>
-        <button className="nav-item">
+        <button className={`nav-item ${activeSection === 'research' ? 'active' : ''}`} onClick={() => openSection('research')}>
           <Search size={18}/> {isArabic ? 'البحث الذكي' : 'Research'}
-          <span className="soon">SOON</span>
         </button>
-        <button className="nav-item">
+        <button className={`nav-item ${activeSection === 'files' ? 'active' : ''}`} onClick={() => openSection('files')}>
           <FilePlus size={18}/> {isArabic ? 'صناعة الملفات' : 'File Creator'}
-          <span className="soon">SOON</span>
         </button>
-        <button className="nav-item">
+        <button className={`nav-item ${activeSection === 'study' ? 'active' : ''}`} onClick={() => openSection('study')}>
           <GraduationCap size={18}/> {isArabic ? 'المساعد الجامعي' : 'Study Assistant'}
         </button>
-        <button className="nav-item">
+        <button className={`nav-item ${activeSection === 'coding' ? 'active' : ''}`} onClick={() => openSection('coding')}>
           <Code size={18}/> {isArabic ? 'البرمجة' : 'Coding'}
         </button>
 
@@ -166,7 +171,7 @@ Make sure the local AI server is running.`
             <Languages size={18}/>
             {isArabic ? 'English' : 'العربية'}
           </button>
-          <button className="nav-item">
+          <button className={`nav-item ${activeSection === 'settings' ? 'active' : ''}`} onClick={() => openSection('settings')}>
             <Settings size={18}/> {isArabic ? 'الإعدادات' : 'Settings'}
           </button>
           <div className="profile">
@@ -212,7 +217,54 @@ Make sure the local AI server is running.`
         </header>
 
         <section className="content">
-          {messages.length === 0 ? (
+          {activeSection !== 'chat' ? (
+            <div className="welcome section-page">
+              <div className="welcome-icon">
+                {activeSection === 'research' ? <Search size={30}/> :
+                 activeSection === 'files' ? <FilePlus size={30}/> :
+                 activeSection === 'study' ? <GraduationCap size={30}/> :
+                 activeSection === 'coding' ? <Code size={30}/> : <Settings size={30}/>}
+              </div>
+              <h1>
+                {activeSection === 'research' ? (isArabic ? 'البحث الذكي' : 'Smart Research') :
+                 activeSection === 'files' ? (isArabic ? 'صناعة الملفات' : 'File Creator') :
+                 activeSection === 'study' ? (isArabic ? 'المساعد الجامعي' : 'Study Assistant') :
+                 activeSection === 'coding' ? (isArabic ? 'مساعد البرمجة' : 'Coding Assistant') :
+                 (isArabic ? 'الإعدادات' : 'Settings')}
+              </h1>
+              <p>
+                {activeSection === 'research' ? (isArabic ? 'اطلب بحثاً منظماً أو شرحاً لموضوع مع توضيح المعلومات التي تحتاج إلى مصادر.' : 'Ask for structured research and explanations.') :
+                 activeSection === 'files' ? (isArabic ? 'أنشئ مسودات التقارير والملخصات والمستندات بمساعدة Gemini.' : 'Create report and document drafts with Gemini.') :
+                 activeSection === 'study' ? (isArabic ? 'اشرح محاضراتك، افهم المفاهيم، وتدرّب على المسائل.' : 'Understand lectures and practice concepts.') :
+                 activeSection === 'coding' ? (isArabic ? 'اكتب الأكواد واطلب شرحها أو تصحيح الأخطاء.' : 'Write, explain and debug code.') :
+                 (isArabic ? 'غيّر لغة التطبيق وتحقق من حالة اتصال النموذج.' : 'Change language and check model connection.')}
+              </p>
+              {activeSection === 'settings' ? (
+                <div className="suggestions">
+                  <button className="suggestion" onClick={() => setLanguage(isArabic ? 'en' : 'ar')}>
+                    <div className="suggestion-icon"><Languages size={21}/></div>
+                    <div><strong>{isArabic ? 'تغيير اللغة' : 'Change language'}</strong><span>{isArabic ? 'English' : 'العربية'}</span></div>
+                  </button>
+                  <div className="suggestion">
+                    <div className="suggestion-icon"><Sparkles size={21}/></div>
+                    <div><strong>Gemini</strong><span>{modelStatus}</span></div>
+                  </div>
+                </div>
+              ) : (
+                <div className="suggestions">
+                  <button className="suggestion" onClick={() => { setActiveSection('chat'); sendMessage(
+                    activeSection === 'research' ? (isArabic ? 'ساعدني في إعداد بحث منظم عن موضوع: ' : 'Help me research this topic: ') :
+                    activeSection === 'files' ? (isArabic ? 'ساعدني في إعداد تقرير عن موضوع: ' : 'Help me draft a report about: ') :
+                    activeSection === 'study' ? (isArabic ? 'أريد شرحاً جامعياً مبسطاً عن: ' : 'Explain this university topic: ') :
+                    (isArabic ? 'ساعدني في البرمجة. أريد شرح أو كتابة كود عن: ' : 'Help me with programming: ')
+                  ); }}>
+                    <div className="suggestion-icon"><Send size={21}/></div>
+                    <div><strong>{isArabic ? 'ابدأ الآن' : 'Start now'}</strong><span>{isArabic ? 'انتقل إلى المحادثة مع المساعد' : 'Continue in AI chat'}</span></div>
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : messages.length === 0 ? (
             <div className="welcome">
               <div className="welcome-icon">
                 <Sparkles size={32}/>
