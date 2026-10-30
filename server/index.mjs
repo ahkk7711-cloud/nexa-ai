@@ -80,7 +80,6 @@ app.post("/api/chat", async (req, res) => {
           },
           contents,
           generationConfig: {
-            temperature: 0.7,
             maxOutputTokens: 1024
           }
         }),
@@ -122,6 +121,6 @@ app.post("/api/chat", async (req, res) => {
   }
 });
 
-app.listen(PORT, "127.0.0.1", () => {
+app.listen(PORT, "0.0.0.0", () => {
   console.log(`Nexa AI Gemini backend running on http://127.0.0.1:${PORT}`);
 });

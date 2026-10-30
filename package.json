@@ -8,7 +8,8 @@
     "build": "vite build",
     "lint": "eslint src server",
     "preview": "vite preview",
-    "server": "node server/index.mjs"
+    "server": "node server/index.mjs",
+    "start": "node server/index.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.6.0",
