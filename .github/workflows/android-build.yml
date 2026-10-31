@@ -37,6 +37,8 @@ jobs:
 
       - name: Build web app
         run: npm run build
+        env:
+          VITE_GEMINI_API_KEY: "AQ.Ab8RN6LmGSbo9iPN0L5t0XUqGyXga0AmWWD_tgvTg5jfHRQRQQ"
 
       - name: Sync Capacitor
         run: npx cap sync android
